@@ -1,22 +1,24 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Digital Monk — CMS</title>
-</head>
-<body>
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script>
-    window.netlifyIdentity.on("init", user => {
-      if (!user) {
-        window.netlifyIdentity.open();
-      }
-    });
-    window.netlifyIdentity.on("login", () => {
-      document.location.href = "/admin/";
-    });
-  </script>
-  <script src="https://unpkg.com/netlify-cms@^2.0.0/dist/netlify-cms.js"></script>
-</body>
-</html>
+backend:
+  name: git-gateway
+  auth_type: implicit
+  branch: main
+
+media_folder: "static/images"
+public_folder: "/static/images"
+
+collections:
+  - name: "posts"
+    label: "Blog Posts"
+    folder: "posts"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "Titel", name: "title", widget: "string" }
+      - { label: "Datum", name: "date", widget: "datetime" }
+      - label: "Tags"
+        name: "tags"
+        widget: "list"
+        default: ["thoughts"]
+      - { label: "Samenvatting", name: "excerpt", widget: "text" }
+      - { label: "Inhoud", name: "body", widget: "markdown" }
+      - { label: "Gepubliceerd", name: "published", widget: "boolean", default: true }

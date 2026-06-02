@@ -8,18 +8,14 @@
 <body>
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script>
-    // Verwerk de token VOORDAT de CMS laadt
-    const hash = window.location.hash;
-    if (hash && hash.includes('recovery_token=')) {
-      const token = hash.split('recovery_token=')[1];
-      window.netlifyIdentity.open('recovery', { token });
-    } else if (hash && hash.includes('invite_token=')) {
-      const token = hash.split('invite_token=')[1];
-      window.netlifyIdentity.open('invite', { token });
-    } else if (hash && hash.includes('confirmation_token=')) {
-      const token = hash.split('confirmation_token=')[1];
-      window.netlifyIdentity.open('confirm', { token });
-    }
+    window.netlifyIdentity.on("init", user => {
+      if (!user) {
+        window.netlifyIdentity.open();
+      }
+    });
+    window.netlifyIdentity.on("login", () => {
+      document.location.href = "/admin/";
+    });
   </script>
   <script src="https://unpkg.com/netlify-cms@^2.0.0/dist/netlify-cms.js"></script>
 </body>

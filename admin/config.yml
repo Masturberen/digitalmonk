@@ -1,7 +1,8 @@
 backend:
-  name: github
-  repo: JOUW-GITHUB-USERNAME/digitalmonk
+  name: git-gateway
   branch: main
+
+local_backend: false
 
 media_folder: "static/images"
 public_folder: "/static/images"
@@ -21,7 +22,4 @@ collections:
         default: ["thoughts"]
       - { label: "Samenvatting", name: "excerpt", widget: "text" }
       - { label: "Inhoud", name: "body", widget: "markdown" }
-      - label: "Gepubliceerd"
-        name: "published"
-        widget: "boolean"
-        default: true
+      - { label: "Gepubliceerd", name: "published", widget: "boolean", default: true }

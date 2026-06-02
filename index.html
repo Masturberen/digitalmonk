@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIGITAL MONK OS v3.0</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Press+Start+2P&display=swap');
+
+  :root {
+    --bg:#0a0a0f;--bg2:#111118;--panel:#13131a;--border:#2a2a3a;
+    --accent:#00ff9f;--accent2:#ff3c6e;--accent3:#3c9eff;
+    --text:#c8c8d8;--text2:#8888aa;--titlebar:#1a1a28;
+    --glow:0 0 12px var(--accent);--win-shadow:0 8px 40px rgba(0,0,0,.7),0 0 0 1px var(--border);
+  }
+  .theme-xp{--bg:#2a6fad;--bg2:#1e5a99;--panel:#d4e8f7;--border:#7aaedc;--accent:#ff8c00;--accent2:#cc0000;--accent3:#0050a0;--text:#000;--text2:#333;--titlebar:#1e5a99;}
+  .theme-fallout{--bg:#0d1a00;--bg2:#111f00;--panel:#0f1e00;--border:#2a4a00;--accent:#80ff00;--accent2:#ff6600;--accent3:#60cc00;--text:#80ff00;--text2:#408800;--titlebar:#0a1500;}
+  .theme-lain{--bg:#050510;--bg2:#080820;--panel:#0a0a25;--border:#1a1a50;--accent:#7700ff;--accent2:#ff00aa;--accent3:#00aaff;--text:#aaaaee;--text2:#5555aa;--titlebar:#080820;}
+  .theme-retro{--bg:#1a0a00;--bg2:#200d00;--panel:#251000;--border:#5a3000;--accent:#ff9900;--accent2:#ff5500;--accent3:#ffcc00;--text:#ffcc88;--text2:#aa6633;--titlebar:#150800;}
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Share Tech Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow:hidden;user-select:none;}
+
+  /* BOOT */
+  #boot{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:24px;}
+  #boot .logo{font-family:'VT323',monospace;font-size:64px;color:var(--accent);text-shadow:var(--glow);animation:flicker .1s infinite;}
+  @keyframes flicker{0%,100%{opacity:1}92%{opacity:.95}93%{opacity:.8}94%{opacity:1}}
+  #boot .sub{color:var(--text2);font-size:14px;letter-spacing:4px;}
+  #boot .bar-wrap{width:320px;height:6px;background:#111;border:1px solid var(--accent);}
+  #boot .bar{height:100%;width:0;background:var(--accent);box-shadow:var(--glow);transition:width .05s;}
+  #boot .log{font-size:11px;color:var(--accent);width:320px;min-height:80px;}
+  #boot .log div{opacity:0;animation:fadein .2s forwards;}
+  @keyframes fadein{to{opacity:1}}
+
+  /* WALLPAPER */
+  #wallpaper{position:fixed;inset:0;z-index:0;background:var(--bg);}
+  #wallpaper canvas{width:100%;height:100%;}
+
+  /* DESKTOP */
+  #desktop{position:fixed;inset:0;z-index:1;display:none;}
+
+  /* TASKBAR */
+  #taskbar{position:fixed;bottom:0;left:0;right:0;height:40px;z-index:500;background:rgba(10,10,20,.95);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:6px;backdrop-filter:blur(10px);}
+  .tb-btn{background:var(--panel);border:1px solid var(--border);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .tb-btn:hover,.tb-btn.active{color:var(--accent);border-color:var(--accent);box-shadow:var(--glow);}
+  #tb-clock{margin-left:auto;font-size:12px;color:var(--text2);padding-right:8px;white-space:nowrap;}
+
+  /* ICONS */
+  #icon-grid{position:absolute;top:16px;left:16px;display:grid;grid-template-columns:80px;gap:12px;}
+  .icon{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:8px;transition:all .15s;border:1px solid transparent;}
+  .icon:hover{border-color:var(--accent);background:rgba(0,255,159,.05);}
+  .icon .ic{font-size:28px;filter:drop-shadow(0 0 6px var(--accent));}
+  .icon span{font-size:10px;color:var(--text2);text-align:center;line-height:1.3;}
+  .icon:hover span{color:var(--accent);}
+
+  /* WINDOWS */
+  .window{position:absolute;background:var(--panel);border:1px solid var(--border);box-shadow:var(--win-shadow);display:flex;flex-direction:column;min-width:280px;min-height:180px;z-index:100;}
+  .window.focused{border-color:var(--accent);z-index:200;}
+  .titlebar{background:var(--titlebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:6px 8px;gap:8px;cursor:move;flex-shrink:0;}
+  .titlebar .title{font-size:11px;color:var(--text);flex:1;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .win-btn{width:16px;height:16px;border:1px solid var(--border);background:var(--panel);cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .1s;flex-shrink:0;}
+  .win-btn:hover{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+  .win-btn.min:hover{background:var(--accent3);border-color:var(--accent3);}
+  .win-content{flex:1;overflow:auto;padding:12px;font-size:13px;line-height:1.7;}
+  .win-content::-webkit-scrollbar{width:6px;}
+  .win-content::-webkit-scrollbar-track{background:var(--bg);}
+  .win-content::-webkit-scrollbar-thumb{background:var(--border);}
+  .win-content::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+  .resize-handle{position:absolute;bottom:0;right:0;width:14px;height:14px;cursor:se-resize;}
+  .resize-handle::after{content:'◢';position:absolute;bottom:2px;right:2px;font-size:12px;color:var(--accent);opacity:.4;}
+
+  /* SCANLINES */
+  #scanlines{position:fixed;inset:0;z-index:900;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);display:none;}
+  #scanlines.on{display:block;}
+
+  /* BLOG */
+  .blog-post{border-bottom:1px solid var(--border);padding:14px 0;}
+  .blog-post:last-child{border-bottom:none;}
+  .post-date{font-size:10px;color:var(--accent);letter-spacing:2px;}
+  .post-title{font-family:'VT323',monospace;font-size:22px;color:var(--text);margin:4px 0;cursor:pointer;transition:color .15s;}
+  .post-title:hover{color:var(--accent);text-shadow:var(--glow);}
+  .post-excerpt{font-size:12px;color:var(--text2);line-height:1.6;}
+  .tag{display:inline-block;background:rgba(0,255,159,.1);border:1px solid var(--accent);color:var(--accent);font-size:9px;padding:2px 6px;margin:2px;letter-spacing:1px;}
+  .post-body{font-size:12px;line-height:1.8;color:var(--text);}
+  .post-body h2{font-family:'VT323',monospace;font-size:20px;color:var(--accent);margin:12px 0 6px;}
+  .post-body p{margin-bottom:8px;color:var(--text2);}
+  .post-body blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--text2);font-style:italic;margin:8px 0;}
+  .post-body strong{color:var(--text);}
+  .back-btn{font-size:11px;color:var(--accent3);cursor:pointer;margin-bottom:12px;display:inline-block;}
+  .back-btn:hover{color:var(--accent);}
+
+  /* SETTINGS */
+  .settings-section{margin-bottom:16px;}
+  .settings-section h3{font-size:10px;color:var(--accent);letter-spacing:3px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+  .theme-btn{display:inline-block;padding:6px 12px;margin:3px;cursor:pointer;background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:11px;transition:all .15s;}
+  .theme-btn:hover,.theme-btn.active{border-color:var(--accent);color:var(--accent);}
+
+  /* TETRIS */
+  #tetris-canvas{display:block;border:1px solid var(--accent);image-rendering:pixelated;}
+  .game-score{font-family:'VT323',monospace;font-size:20px;color:var(--accent);margin-bottom:8px;}
+  .game-over{position:absolute;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:10;}
+  .game-over.show{display:flex;}
+  .game-over h2{font-family:'VT323',monospace;font-size:36px;color:var(--accent2);}
+
+  /* ABOUT */
+  .about-stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;}
+  .about-stat span:first-child{color:var(--text2);}
+  .about-stat span:last-child{color:var(--accent);}
+
+  /* MUSIC */
+  .track-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+  .track-item:hover .track-title{color:var(--accent);}
+  .track-num{font-size:10px;color:var(--text2);width:20px;}
+  .track-title{font-size:13px;flex:1;}
+  .track-dur{font-size:11px;color:var(--text2);}
+  .play-btn{width:28px;height:28px;border:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);}
+  .play-btn:hover{background:var(--accent);color:var(--bg);}
+
+  /* PHOTOS */
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .photo-item{aspect-ratio:1;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;transition:all .15s;}
+  .photo-item:hover{border-color:var(--accent);transform:scale(1.02);}
+
+  /* GUESTBOOK */
+  .gb-entry{padding:10px 0;border-bottom:1px solid var(--border);}
+  .gb-name{font-size:11px;color:var(--accent);}
+  .gb-msg{font-size:12px;color:var(--text2);margin-top:2px;}
+  .gb-date{font-size:10px;color:var(--border);}
+  .gb-input{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px;margin:4px 0;outline:none;resize:vertical;}
+  .gb-input:focus{border-color:var(--accent);}
+
+  /* TERMINAL */
+  #terminal-output{font-size:12px;line-height:1.8;min-height:200px;}
+  #terminal-input-line{display:flex;align-items:center;gap:6px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
+  #terminal-prompt{color:var(--accent);font-size:12px;white-space:nowrap;}
+  #terminal-input{background:none;border:none;outline:none;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;flex:1;caret-color:var(--accent);}
+  .t-line{color:var(--text2);}
+  .t-line.acc{color:var(--accent);}
+  .t-line.err{color:var(--accent2);}
+
+  /* NEKO */
+  #neko-canvas{display:block;border:1px solid var(--border);background:var(--bg2);cursor:none;}
+  .neko-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+  .neko-stat{background:var(--bg2);border:1px solid var(--border);padding:8px;}
+  .neko-stat label{font-size:10px;color:var(--text2);display:block;}
+  .neko-stat .bar{height:6px;background:var(--border);margin-top:4px;}
+  .neko-stat .fill{height:100%;background:var(--accent);transition:width .5s;}
+  .neko-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .neko-btn{flex:1;padding:8px;background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-family:'Share Tech Mono',monospace;font-size:11px;cursor:pointer;}
+  .neko-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* CONTEXT MENU */
+  #ctxmenu{position:fixed;background:var(--panel);border:1px solid var(--border);z-index:9000;display:none;min-width:160px;box-shadow:4px 4px 0 rgba(0,0,0,.5);}
+  .ctx-item{padding:8px 16px;font-size:12px;cursor:pointer;color:var(--text2);}
+  .ctx-item:hover{background:var(--accent);color:var(--bg);}
+  .ctx-sep{height:1px;background:var(--border);margin:4px 0;}
+
+  /* MISC */
+  .section-header{font-family:'VT323',monospace;font-size:20px;color:var(--accent);letter-spacing:2px;margin-bottom:12px;}
+  .btn-primary{background:var(--accent);color:var(--bg);border:none;padding:8px 20px;font-family:'Share Tech Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:1px;}
+  .btn-primary:hover{opacity:.85;}
+  .loading{color:var(--text2);font-size:12px;animation:fadein .3s;}
+  p{margin-bottom:8px;font-size:12px;}
+
+  /* CMS BADGE */
+  .cms-link{display:inline-block;margin-top:12px;padding:6px 12px;background:var(--bg2);border:1px solid var(--accent3);color:var(--accent3);font-size:11px;cursor:pointer;text-decoration:none;}
+  .cms-link:hover{background:var(--accent3);color:var(--bg);}
+
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  .blink{animation:blink 1s infinite;}
+</style>
+</head>
+<body>
+
+<div id="boot">
+  <div class="logo">DIGITAL MONK</div>
+  <div class="sub">OS v3.0 — INITIALIZING</div>
+  <div class="bar-wrap"><div class="bar" id="boot-bar"></div></div>
+  <div class="log" id="boot-log"></div>
+</div>
+
+<div id="scanlines"></div>
+<div id="wallpaper"><canvas id="wp-canvas"></canvas></div>
+
+<div id="ctxmenu">
+  <div class="ctx-item" onclick="openWindow('blog')">📝 Open Blog</div>
+  <div class="ctx-item" onclick="openWindow('music')">🎵 Open Mixtapes</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="openWindow('settings')">⚙️ Settings</div>
+  <div class="ctx-item" onclick="openWindow('terminal')">💻 Terminal</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="refreshWallpaper()">🔄 Refresh Wallpaper</div>
+</div>
+
+<div id="desktop">
+  <div id="icon-grid">
+    <div class="icon" ondblclick="openWindow('blog')"><div class="ic">📝</div><span>BLOG</span></div>
+    <div class="icon" ondblclick="openWindow('tetris')"><div class="ic">🟦</div><span>TETRIS</span></div>
+    <div class="icon" ondblclick="openWindow('neko')"><div class="ic">🐱</div><span>NEKO.exe</span></div>
+    <div class="icon" ondblclick="openWindow('music')"><div class="ic">📼</div><span>MIXTAPES</span></div>
+    <div class="icon" ondblclick="openWindow('photos')"><div class="ic">📷</div><span>PHOTOS</span></div>
+    <div class="icon" ondblclick="openWindow('guestbook')"><div class="ic">📖</div><span>GUESTBOOK</span></div>
+    <div class="icon" ondblclick="openWindow('about')"><div class="ic">👤</div><span>ABOUT.me</span></div>
+    <div class="icon" ondblclick="openWindow('terminal')"><div class="ic">💻</div><span>TERMINAL</span></div>
+    <div class="icon" ondblclick="openWindow('settings')"><div class="ic">⚙️</div><span>SETTINGS</span></div>
+  </div>
+</div>
+
+<div id="taskbar" style="display:none">
+  <div class="tb-btn" onclick="toggleAll()">⊞ START</div>
+  <div id="tb-tasks" style="display:flex;gap:4px;overflow:hidden;"></div>
+  <div id="tb-clock">--:--</div>
+</div>
+
+<script>
+// ─── POSTS DATA ───────────────────────────────────────────────────────────────
+let POSTS = [];
+
+async function loadPosts() {
+  try {
+    const res = await fetch('/posts-index.json');
+    if (!res.ok) throw new Error();
+    const index = await res.json();
+    const loaded = await Promise.all(index.map(async fname => {
+      const r = await fetch('/posts/' + fname);
+      const raw = await r.text();
+      return parseFrontmatter(raw, fname);
+    }));
+    POSTS = loaded.filter(p => p.published !== false)
+                  .sort((a,b) => new Date(b.date) - new Date(a.date));
+  } catch(e) {
+    // fallback demo posts
+    POSTS = [
+      { title:'Transmissions From the Void', date:'2025-06-01', tags:['thoughts','meta'],
+        excerpt:'Every signal starts as noise. This site is my attempt to turn the static into something with shape.',
+        body:'## Welcome\n\nThis is the new Digital Monk. A blog wrapped in a retro desktop metaphor.\n\nPosts about music, code, games, and whatever else passes through the void.' },
+      { title:'Japanese Record Hunting in Amsterdam', date:'2025-05-14', tags:['music','records','japan'],
+        excerpt:'Found three gems in a tiny shop off Waterlooplein. A 1978 Ryuichi Sakamoto press, one obscure YMO B-side.',
+        body:'## The Finds\n\n**Ryuichi Sakamoto — 千のナイフ (1978)**\nFirst press. Near mint vinyl.\n\n**Yellow Magic Orchestra — Unknown B-side**\nStill figuring out exactly which release.\n\n> The best records find you.' },
+    ];
+  }
+}
+
+function parseFrontmatter(raw, fname) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!match) return { title: fname, body: raw, date: new Date().toISOString(), tags:[] };
+  const meta = { tags: [] };
+  match[1].split('\n').forEach(line => {
+    const colon = line.indexOf(':');
+    if (colon < 0) return;
+    const k = line.slice(0,colon).trim();
+    const v = line.slice(colon+1).trim().replace(/^["']|["']$/g,'');
+    if (k === 'tags') {
+      const tm = line.match(/\[(.*?)\]/);
+      if (tm) meta.tags = tm[1].split(',').map(t=>t.trim().replace(/["']/g,''));
+    } else meta[k] = v;
+  });
+  meta.body = match[2].trim();
+  return meta;
+}
+
+function formatDate(d) {
+  return String(d).slice(0,10).replace(/-/g,'.');
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+const bootMsgs = ['Loading kernel modules...','Mounting filesystem...','Initializing audio engine...','Loading aesthetic module...','Fetching posts...','Spawning desktop...','SYSTEM READY.'];
+let bootIdx = 0;
+const bootBar = document.getElementById('boot-bar');
+const bootLog = document.getElementById('boot-log');
+
+function bootStep() {
+  if (bootIdx < bootMsgs.length) {
+    const d = document.createElement('div');
+    d.textContent = '> ' + bootMsgs[bootIdx];
+    bootLog.appendChild(d);
+    bootBar.style.width = ((bootIdx+1)/bootMsgs.length*100)+'%';
+    bootIdx++;
+    setTimeout(bootStep, 260+Math.random()*200);
+  } else { setTimeout(launchDesktop, 400); }
+}
+
+async function launchDesktop() {
+  await loadPosts();
+  document.getElementById('boot').style.transition='opacity .5s';
+  document.getElementById('boot').style.opacity='0';
+  setTimeout(()=>{
+    document.getElementById('boot').style.display='none';
+    document.getElementById('desktop').style.display='block';
+    document.getElementById('taskbar').style.display='flex';
+    initWallpaper(); startClock();
+    setTimeout(()=>{ openWindow('about'); setTimeout(()=>openWindow('blog'),300); },200);
+  },500);
+}
+setTimeout(bootStep,400);
+
+// ─── CLOCK ───────────────────────────────────────────────────────────────────
+function startClock(){
+  function tick(){
+    const n=new Date();
+    document.getElementById('tb-clock').textContent=
+      n.getHours().toString().padStart(2,'0')+':'+
+      n.getMinutes().toString().padStart(2,'0')+':'+
+      n.getSeconds().toString().padStart(2,'0');
+  }
+  tick();setInterval(tick,1000);
+}
+
+// ─── WALLPAPER ───────────────────────────────────────────────────────────────
+let wpCtx,wpW,wpH,wpP=[];
+function initWallpaper(){
+  const c=document.getElementById('wp-canvas');
+  wpCtx=c.getContext('2d');
+  function resize(){wpW=c.width=window.innerWidth;wpH=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<80;i++)wpP.push({x:Math.random()*wpW,y:Math.random()*wpH,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*1.5+.5,a:Math.random()});
+  animWp();
+}
+function animWp(){
+  requestAnimationFrame(animWp);
+  const s=getComputedStyle(document.body);
+  const bg=s.getPropertyValue('--bg').trim()||'#0a0a0f';
+  const acc=s.getPropertyValue('--accent').trim()||'#00ff9f';
+  wpCtx.fillStyle=bg+'cc';wpCtx.fillRect(0,0,wpW,wpH);
+  wpP.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=wpW;if(p.x>wpW)p.x=0;if(p.y<0)p.y=wpH;if(p.y>wpH)p.y=0;
+    wpCtx.beginPath();wpCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    wpCtx.fillStyle=acc+Math.floor(p.a*99).toString(16).padStart(2,'0');wpCtx.fill();
+  });
+  for(let i=0;i<wpP.length;i++)for(let j=i+1;j<wpP.length;j++){
+    const dx=wpP[i].x-wpP[j].x,dy=wpP[i].y-wpP[j].y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<120){wpCtx.beginPath();wpCtx.moveTo(wpP[i].x,wpP[i].y);wpCtx.lineTo(wpP[j].x,wpP[j].y);
+    wpCtx.strokeStyle=acc+Math.floor((1-d/120)*30).toString(16).padStart(2,'0');wpCtx.lineWidth=.5;wpCtx.stroke();}
+  }
+}
+function refreshWallpaper(){wpP.forEach(p=>{p.x=Math.random()*wpW;p.y=Math.random()*wpH;});}
+
+// ─── WINDOW MANAGER ──────────────────────────────────────────────────────────
+let zTop=200,wins={};
+const winDefs={
+  blog:{title:'📝 BLOG.txt — DIGITAL MONK',w:520,h:500,x:120,y:60},
+  tetris:{title:'🟦 TETRIS — DIGITAL MONK',w:240,h:520,x:200,y:40},
+  neko:{title:'🐱 NEKO.exe — DIGITAL MONK',w:360,h:430,x:300,y:80},
+  music:{title:'📼 MIXTAPES — DIGITAL MONK',w:420,h:360,x:160,y:100},
+  photos:{title:'📷 PHOTOS — DIGITAL MONK',w:380,h:360,x:180,y:80},
+  guestbook:{title:'📖 GUESTBOOK — DIGITAL MONK',w:420,h:460,x:140,y:60},
+  about:{title:'👤 ABOUT.me — DIGITAL MONK',w:360,h:400,x:200,y:80},
+  terminal:{title:'💻 TERMINAL — DIGITAL MONK',w:480,h:340,x:150,y:100},
+  settings:{title:'⚙️ SETTINGS — DIGITAL MONK',w:340,h:420,x:220,y:80},
+};
+
+function openWindow(id){
+  hideCtx();
+  if(wins[id]){focusWin(id);return;}
+  const def=winDefs[id];
+  const win=document.createElement('div');
+  win.className='window focused';win.id='win-'+id;
+  win.style.cssText=`width:${def.w}px;height:${def.h}px;left:${def.x+Math.random()*20}px;top:${def.y+Math.random()*15}px;z-index:${++zTop}`;
+  win.innerHTML=`
+    <div class="titlebar" onmousedown="startDrag(event,'${id}')">
+      <span style="font-size:9px;color:var(--accent)">●</span>
+      <span class="title">${def.title}</span>
+      <div class="win-btn min" onclick="minWin('${id}')" title="Minimise">_</div>
+      <div class="win-btn" onclick="closeWin('${id}')" title="Close">✕</div>
+    </div>
+    <div class="win-content" id="wc-${id}"><div class="loading">Loading...</div></div>
+    <div class="resize-handle" onmousedown="startResize(event,'${id}')"></div>`;
+  win.addEventListener('mousedown',()=>focusWin(id));
+  document.getElementById('desktop').appendChild(win);
+  wins[id]={el:win,minimized:false};
+  addTbBtn(id,def.title);
+  setTimeout(()=>{ document.getElementById('wc-'+id).innerHTML=buildContent(id); postInit(id); },50);
+}
+
+function buildContent(id){
+  switch(id){
+    case 'blog':     return blogContent();
+    case 'music':    return musicContent();
+    case 'photos':   return photosContent();
+    case 'guestbook':return guestbookContent();
+    case 'about':    return aboutContent();
+    case 'settings': return settingsContent();
+    case 'tetris':   return tetrisContent();
+    case 'neko':     return nekoContent();
+    case 'terminal': return terminalContent();
+    default: return '<p>Content loading...</p>';
+  }
+}
+
+function postInit(id){
+  if(id==='tetris') initTetris();
+  if(id==='neko') initNeko();
+  if(id==='terminal') initTerminal();
+}
+
+function focusWin(id){
+  Object.values(wins).forEach(w=>w&&w.el.classList.remove('focused'));
+  if(wins[id]){wins[id].el.classList.add('focused');wins[id].el.style.zIndex=++zTop;
+    if(wins[id].minimized)restoreWin(id);}
+}
+function closeWin(id){if(!wins[id])return;wins[id].el.remove();delete wins[id];removeTbBtn(id);}
+function minWin(id){if(!wins[id])return;wins[id].el.style.display='none';wins[id].minimized=true;const b=document.getElementById('tb-'+id);if(b)b.classList.remove('active');}
+function restoreWin(id){if(!wins[id])return;wins[id].el.style.display='flex';wins[id].minimized=false;focusWin(id);}
+function addTbBtn(id,title){
+  const tb=document.getElementById('tb-tasks');
+  const short=title.split('—')[0].trim().slice(0,12);
+  const b=document.createElement('div');b.className='tb-btn active';b.id='tb-'+id;b.textContent=short;
+  b.onclick=()=>wins[id]?.minimized?restoreWin(id):minWin(id);tb.appendChild(b);
+}
+function removeTbBtn(id){document.getElementById('tb-'+id)?.remove();}
+
+// ─── DRAG & RESIZE ───────────────────────────────────────────────────────────
+let dragging=null,dOX,dOY;
+function startDrag(e,id){
+  if(e.target.classList.contains('win-btn'))return;
+  dragging=id;focusWin(id);
+  const r=wins[id].el.getBoundingClientRect();dOX=e.clientX-r.left;dOY=e.clientY-r.top;e.preventDefault();
+}
+document.addEventListener('mousemove',e=>{
+  if(!dragging)return;const w=wins[dragging]?.el;if(!w)return;
+  w.style.left=(e.clientX-dOX)+'px';w.style.top=Math.max(0,e.clientY-dOY)+'px';
+});
+document.addEventListener('mouseup',()=>{dragging=null;resizing=null;});
+
+let resizing=null,rOX,rOY,rW,rH;
+function startResize(e,id){
+  resizing=id;focusWin(id);
+  const r=wins[id].el.getBoundingClientRect();rOX=e.clientX;rOY=e.clientY;rW=r.width;rH=r.height;
+  e.preventDefault();e.stopPropagation();
+}
+document.addEventListener('mousemove',e=>{
+  if(!resizing)return;const w=wins[resizing]?.el;if(!w)return;
+  w.style.width=Math.max(260,rW+e.clientX-rOX)+'px';w.style.height=Math.max(160,rH+e.clientY-rOY)+'px';
+});
+
+// ─── CONTEXT MENU ────────────────────────────────────────────────────────────
+document.getElementById('desktop').addEventListener('contextmenu',e=>{
+  e.preventDefault();const m=document.getElementById('ctxmenu');
+  m.style.display='block';m.style.left=Math.min(e.clientX,window.innerWidth-170)+'px';
+  m.style.top=Math.min(e.clientY,window.innerHeight-200)+'px';
+});
+document.addEventListener('click',hideCtx);
+function hideCtx(){document.getElementById('ctxmenu').style.display='none';}
+
+let allMin=false;
+function toggleAll(){allMin=!allMin;Object.keys(wins).forEach(id=>allMin?minWin(id):restoreWin(id));}
+
+// ─── THEMES ──────────────────────────────────────────────────────────────────
+function setTheme(name){
+  document.body.className=name?'theme-'+name:'';
+  document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===(name||'default')));
+}
+function toggleScanlines(){document.getElementById('scanlines').classList.toggle('on');}
+
+// ─── BLOG ────────────────────────────────────────────────────────────────────
+function blogContent(){
+  if(!POSTS.length) return '<div class="loading">No posts found.</div>';
+  return `<div class="section-header">// TRANSMISSIONS FROM THE VOID</div>` +
+    POSTS.map((p,i)=>`
+      <div class="blog-post">
+        <div class="post-date">${formatDate(p.date)}</div>
+        <div class="post-title" onclick="openPost(${i})">${p.title}</div>
+        <div class="post-excerpt">${p.excerpt||''}</div>
+        <div style="margin-top:6px">${(p.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+      </div>`).join('') +
+    `<div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+      <a class="cms-link" href="/admin" target="_blank">✏️ WRITE NEW POST (CMS)</a>
+     </div>`;
+}
+
+function openPost(idx){
+  const p=POSTS[idx];
+  if(!p)return;
+  const wc=document.getElementById('wc-blog');
+  if(!wc)return;
+  const html=typeof marked!=='undefined'?marked.parse(p.body||''):p.body||'';
+  wc.innerHTML=`
+    <div class="back-btn" onclick="document.getElementById('wc-blog').innerHTML=blogContent()">← BACK TO POSTS</div>
+    <div class="post-date">${formatDate(p.date)}</div>
+    <div style="font-family:'VT323',monospace;font-size:28px;color:var(--accent);margin:6px 0">${p.title}</div>
+    <div style="margin-bottom:12px">${(p.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    <div class="post-body">${html}</div>`;
+}
+
+// ─── MUSIC ───────────────────────────────────────────────────────────────────
+function musicContent(){
+  const tracks=[{n:'01',t:'DJ Set — Hot Local Dad',d:'1:12:44'},{n:'02',t:'Japanese Record Collection Vol. I',d:'58:20'},{n:'03',t:'Alternative World Mix',d:'47:03'},{n:'04',t:'Late Night City Drift',d:'1:02:11'},{n:'05',t:'Koto & Electronics',d:'39:58'}];
+  return `<div class="section-header">// MIXTAPES</div>`+
+    tracks.map(t=>`<div class="track-item" onclick="this.querySelector('.play-btn').textContent=this.querySelector('.play-btn').textContent==='▶'?'⏸':'▶'"><div class="track-num">${t.n}</div><div class="track-title">${t.t}</div><div class="track-dur">${t.d}</div><div class="play-btn">▶</div></div>`).join('')+
+    `<p style="margin-top:12px;font-size:11px;color:var(--text2)">// Full mixes on Mixcloud & Odysee</p>`;
+}
+
+// ─── PHOTOS ──────────────────────────────────────────────────────────────────
+function photosContent(){
+  const e=['🌆','🎴','📸','🌃','🎌','🔭','🍜','🚂','🎮','🌿','🏮','💿'];
+  return `<div class="section-header">// IMAGES — /gallery/</div><div class="photo-grid">${e.map((x,i)=>`<div class="photo-item" title="Photo ${i+1}">${x}</div>`).join('')}</div><p style="margin-top:10px;font-size:11px;color:var(--text2)">// Drop your images in /static/images/ and link here</p>`;
+}
+
+// ─── GUESTBOOK ───────────────────────────────────────────────────────────────
+const gbEntries=[{name:'wanderer_404',msg:'Found this in a Reddit thread. Best site in years.',date:'2025.05.30'},{name:'retro_null',msg:'The Tetris is dangerous. Lost 45 min. No regrets.',date:'2025.05.12'},{name:'hypertext_ghost',msg:'This is what the early web felt like. Keep the faith.',date:'2025.04.07'}];
+function guestbookContent(){
+  return `<div class="section-header">// GUESTBOOK</div><div id="gb-list">${renderGB()}</div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:10px;color:var(--accent);margin-bottom:8px">// LEAVE A MESSAGE</div>
+      <input class="gb-input" id="gb-name" placeholder="handle / name" /><textarea class="gb-input" id="gb-msg" rows="3" placeholder="your message..."></textarea>
+      <button class="btn-primary" onclick="addGB()">SUBMIT_</button>
+    </div>`;
+}
+function renderGB(){return gbEntries.slice().reverse().map(e=>`<div class="gb-entry"><div class="gb-name">${e.name}</div><div class="gb-msg">${e.msg}</div><div class="gb-date">${e.date}</div></div>`).join('');}
+function addGB(){
+  const name=document.getElementById('gb-name')?.value.trim();
+  const msg=document.getElementById('gb-msg')?.value.trim();
+  if(!name||!msg)return;
+  const t=new Date();gbEntries.push({name,msg,date:t.getFullYear()+'.'+String(t.getMonth()+1).padStart(2,'0')+'.'+String(t.getDate()).padStart(2,'0')});
+  document.getElementById('gb-list').innerHTML=renderGB();
+  document.getElementById('gb-name').value='';document.getElementById('gb-msg').value='';
+}
+
+// ─── ABOUT ───────────────────────────────────────────────────────────────────
+function aboutContent(){
+  return `<div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:16px">
+    <div style="width:72px;height:72px;border:2px solid var(--accent);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:32px;">🧘</div>
+    <div><div style="font-family:'VT323',monospace;font-size:28px;color:var(--accent)">DIGITAL MONK</div><div style="font-size:11px;color:var(--text2);margin-top:4px">// A wanderer between signals</div></div>
+  </div>
+  <div class="about-stat"><span>LOCATION</span><span>NL / The Internet</span></div>
+  <div class="about-stat"><span>INTERESTS</span><span>Music, Code, Obscure Things</span></div>
+  <div class="about-stat"><span>LISTENING</span><span>Japanese ambient records</span></div>
+  <div class="about-stat"><span>READING</span><span>Neuromancer (again)</span></div>
+  <div class="about-stat"><span>OS</span><span>Digital Monk v3.0</span></div>
+  <p style="margin-top:16px">This site is a personal space on the internet. Blog, arcade, mixtapes, and an experiment in retro-futurist web design.</p>
+  <p>Plain HTML/CSS/JS — no frameworks, no trackers, no ads.</p>`;
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function settingsContent(){
+  return `<div class="section-header">// SYSTEM SETTINGS</div>
+    <div class="settings-section"><h3>COLOUR THEME</h3>
+      <div class="theme-btn active" data-theme="default" onclick="setTheme('')">DEFAULT</div>
+      <div class="theme-btn" data-theme="xp" onclick="setTheme('xp')">XP</div>
+      <div class="theme-btn" data-theme="fallout" onclick="setTheme('fallout')">FALLOUT</div>
+      <div class="theme-btn" data-theme="lain" onclick="setTheme('lain')">LAIN</div>
+      <div class="theme-btn" data-theme="retro" onclick="setTheme('retro')">RETRO</div>
+    </div>
+    <div class="settings-section"><h3>EFFECTS</h3>
+      <div class="theme-btn" onclick="toggleScanlines()">SCANLINES ON/OFF</div>
+      <div class="theme-btn" onclick="refreshWallpaper()">REFRESH WALLPAPER</div>
+    </div>
+    <div class="settings-section"><h3>WINDOWS</h3>
+      <div class="theme-btn" onclick="cascadeWins()">CASCADE ALL</div>
+      <div class="theme-btn" onclick="closeAll()">CLOSE ALL</div>
+    </div>
+    <div class="settings-section"><h3>SYSTEM INFO</h3>
+      <div style="font-size:11px;color:var(--text2);line-height:2">
+        OS: Digital Monk v3.0<br>Engine: Vanilla JS<br>Hosting: Netlify (free)<br>CMS: Netlify CMS (free)<br>Cost: €0.00/month
+      </div>
+    </div>`;
+}
+function cascadeWins(){let i=0;Object.keys(wins).forEach(id=>{const w=wins[id]?.el;if(!w)return;w.style.left=(80+i*24)+'px';w.style.top=(60+i*24)+'px';w.style.display='flex';wins[id].minimized=false;i++;});}
+function closeAll(){[...Object.keys(wins)].forEach(id=>closeWin(id));}
+
+// ─── TETRIS ──────────────────────────────────────────────────────────────────
+function tetrisContent(){
+  return `<div class="game-score" id="tet-score">SCORE: 0 | LVL: 1</div>
+    <div style="position:relative;display:inline-block">
+      <canvas id="tetris-canvas" width="200" height="400"></canvas>
+      <div class="game-over" id="tet-over"><h2>GAME OVER</h2><div id="tet-final" style="font-size:12px;color:var(--text2)"></div><button class="btn-primary" onclick="tetrisStart()">NEW GAME</button></div>
+    </div>
+    <div style="font-size:10px;color:var(--text2);margin-top:6px">← → MOVE &nbsp; ↑ ROTATE &nbsp; ↓ DROP &nbsp; SPC SLAM</div>
+    <button class="btn-primary" style="margin-top:8px" onclick="tetrisStart()">NEW GAME</button>`;
+}
+let tet=null;
+function initTetris(){setTimeout(()=>{if(document.getElementById('tetris-canvas'))tetrisStart();},100);}
+function tetrisStart(){
+  const cv=document.getElementById('tetris-canvas');if(!cv)return;
+  const cx=cv.getContext('2d');
+  const W=10,H=20,BS=20;
+  const C=['','#00ff9f','#ff3c6e','#3c9eff','#ffcc00','#ff9900','#cc44ff','#44ffcc'];
+  const P=[[[1,1,1,1]],[[2,2],[2,2]],[[0,3,3],[3,3,0]],[[4,4,0],[0,4,4]],[[5,0,0],[5,5,5]],[[0,0,6],[6,6,6]],[[0,7,0],[7,7,7]]];
+  tet={board:Array.from({length:H},()=>Array(W).fill(0)),score:0,level:1,lines:0,running:true,piece:null,px:0,py:0,iv:null};
+  function np(){const s=P[Math.floor(Math.random()*P.length)];tet.piece=s;tet.px=Math.floor((W-s[0].length)/2);tet.py=0;if(!ok(s,tet.px,tet.py))over();}
+  function ok(p,ox,oy){for(let y=0;y<p.length;y++)for(let x=0;x<p[y].length;x++)if(p[y][x]&&(oy+y>=H||ox+x<0||ox+x>=W||tet.board[oy+y][ox+x]))return false;return true;}
+  function place(){
+    for(let y=0;y<tet.piece.length;y++)for(let x=0;x<tet.piece[y].length;x++)if(tet.piece[y][x])tet.board[tet.py+y][tet.px+x]=tet.piece[y][x];
+    let cl=0;tet.board=tet.board.filter(r=>{if(r.every(c=>c)){cl++;return false;}return true;});
+    while(tet.board.length<H)tet.board.unshift(Array(W).fill(0));
+    if(cl){tet.lines+=cl;tet.score+=cl*100*tet.level;tet.level=Math.floor(tet.lines/10)+1;}np();
+  }
+  function rot(p){return p[0].map((_,i)=>p.map(r=>r[i]).reverse());}
+  function draw(){
+    cx.fillStyle=getComputedStyle(document.body).getPropertyValue('--bg2').trim()||'#111';cx.fillRect(0,0,W*BS,H*BS);
+    cx.strokeStyle='#1a1a2a';cx.lineWidth=.5;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(tet.board[y][x]){cx.fillStyle=C[tet.board[y][x]];cx.fillRect(x*BS+1,y*BS+1,BS-2,BS-2);}else cx.strokeRect(x*BS,y*BS,BS,BS);}
+    if(tet.piece){
+      const col=C[tet.piece.flat().find(c=>c)||1];
+      let gy=tet.py;while(ok(tet.piece,tet.px,gy+1))gy++;
+      cx.globalAlpha=.2;cx.fillStyle=col;
+      for(let y=0;y<tet.piece.length;y++)for(let x=0;x<tet.piece[y].length;x++)if(tet.piece[y][x])cx.fillRect((tet.px+x)*BS+1,(gy+y)*BS+1,BS-2,BS-2);
+      cx.globalAlpha=1;
+      for(let y=0;y<tet.piece.length;y++)for(let x=0;x<tet.piece[y].length;x++)if(tet.piece[y][x])cx.fillRect((tet.px+x)*BS+1,(tet.py+y)*BS+1,BS-2,BS-2);
+    }
+    const sc=document.getElementById('tet-score');if(sc)sc.textContent=`SCORE: ${tet.score} | LVL: ${tet.level} | LINES: ${tet.lines}`;
+  }
+  function drop(){if(!tet.running)return;if(ok(tet.piece,tet.px,tet.py+1))tet.py++;else place();draw();}
+  function over(){tet.running=false;clearInterval(tet.iv);const ov=document.getElementById('tet-over');if(ov){document.getElementById('tet-final').textContent=`Score: ${tet.score}`;ov.classList.add('show');}}
+  document.getElementById('tet-over')?.classList.remove('show');
+  np();draw();clearInterval(tet.iv);tet.iv=setInterval(drop,Math.max(80,600-tet.level*50));
+  document.onkeydown=e=>{
+    if(!tet.running||!tet.piece)return;
+    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
+    if(e.code==='ArrowLeft'&&ok(tet.piece,tet.px-1,tet.py)){tet.px--;draw();}
+    if(e.code==='ArrowRight'&&ok(tet.piece,tet.px+1,tet.py)){tet.px++;draw();}
+    if(e.code==='ArrowDown'&&ok(tet.piece,tet.px,tet.py+1)){tet.py++;draw();}
+    if(e.code==='ArrowUp'){const r=rot(tet.piece);if(ok(r,tet.px,tet.py)){tet.piece=r;draw();}}
+    if(e.code==='Space'){while(ok(tet.piece,tet.px,tet.py+1))tet.py++;place();draw();}
+  };
+}
+
+// ─── NEKO ────────────────────────────────────────────────────────────────────
+function nekoContent(){
+  return `<canvas id="neko-canvas" width="300" height="200"></canvas>
+    <div class="neko-stats">
+      <div class="neko-stat"><label>HUNGER</label><div class="bar"><div class="fill" id="nk-hunger" style="width:80%"></div></div></div>
+      <div class="neko-stat"><label>HAPPY</label><div class="bar"><div class="fill" id="nk-happy" style="width:70%"></div></div></div>
+      <div class="neko-stat"><label>ENERGY</label><div class="bar"><div class="fill" id="nk-energy" style="width:60%"></div></div></div>
+      <div class="neko-stat"><label>CLEAN</label><div class="bar"><div class="fill" id="nk-clean" style="width:90%"></div></div></div>
+    </div>
+    <div class="neko-btns">
+      <button class="neko-btn" onclick="nekoAct('feed')">🍣 FEED</button>
+      <button class="neko-btn" onclick="nekoAct('pet')">✋ PET</button>
+      <button class="neko-btn" onclick="nekoAct('play')">🎾 PLAY</button>
+      <button class="neko-btn" onclick="nekoAct('sleep')">💤 SLEEP</button>
+    </div>
+    <div id="neko-msg" style="margin-top:8px;font-size:11px;color:var(--accent);min-height:18px"></div>`;
+}
+let neko={x:150,y:100,tx:150,ty:100,hunger:80,happy:70,energy:60,clean:90,frame:0};
+let nekoIv=null;
+function initNeko(){
+  setTimeout(()=>{
+    const cv=document.getElementById('neko-canvas');if(!cv)return;
+    const cx=cv.getContext('2d');
+    cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();neko.tx=e.clientX-r.left;neko.ty=e.clientY-r.top;});
+    cv.addEventListener('click',()=>nekoAct('pet'));
+    clearInterval(nekoIv);nekoIv=setInterval(()=>drawNeko(cx,300,200),80);
+    setInterval(()=>{neko.hunger=Math.max(0,neko.hunger-.3);neko.happy=Math.max(0,neko.happy-.2);neko.energy=Math.max(0,neko.energy-.1);updateNekoStats();},2000);
+  },100);
+}
+function drawNeko(cx,W,H){
+  neko.frame++;
+  cx.fillStyle=getComputedStyle(document.body).getPropertyValue('--bg2').trim()||'#111';cx.fillRect(0,0,W,H);
+  const dx=neko.tx-neko.x,dy=neko.ty-neko.y,dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist>3){neko.x+=dx*.08;neko.y+=dy*.08;}
+  const acc=getComputedStyle(document.body).getPropertyValue('--accent').trim()||'#00ff9f';
+  cx.fillStyle=acc;
+  cx.beginPath();cx.ellipse(neko.x,neko.y,18,14,0,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.ellipse(neko.x,neko.y-20,14,12,0,0,Math.PI*2);cx.fill();
+  cx.beginPath();cx.moveTo(neko.x-10,neko.y-30);cx.lineTo(neko.x-16,neko.y-42);cx.lineTo(neko.x-4,neko.y-32);cx.fill();
+  cx.beginPath();cx.moveTo(neko.x+10,neko.y-30);cx.lineTo(neko.x+16,neko.y-42);cx.lineTo(neko.x+4,neko.y-32);cx.fill();
+  cx.fillStyle=getComputedStyle(document.body).getPropertyValue('--bg').trim()||'#0a0a0f';
+  const bl=neko.frame%60<3;
+  if(bl){cx.fillRect(neko.x-6,neko.y-22,6,1);cx.fillRect(neko.x+2,neko.y-22,6,1);}
+  else{cx.beginPath();cx.arc(neko.x-5,neko.y-21,3,0,Math.PI*2);cx.arc(neko.x+5,neko.y-21,3,0,Math.PI*2);cx.fill();}
+  const tw=Math.sin(neko.frame*.15)*20;
+  cx.strokeStyle=acc;cx.lineWidth=4;cx.lineCap='round';
+  cx.beginPath();cx.moveTo(neko.x+18,neko.y);cx.quadraticCurveTo(neko.x+30+tw,neko.y-20,neko.x+24+tw,neko.y-34);cx.stroke();
+  cx.fillStyle=acc;
+  if(dist>3){const pw=Math.sin(neko.frame*.3)*6;cx.beginPath();cx.ellipse(neko.x-10,neko.y+14+pw,5,4,0,0,Math.PI*2);cx.fill();cx.beginPath();cx.ellipse(neko.x+10,neko.y+14-pw,5,4,0,0,Math.PI*2);cx.fill();}
+  const a2=getComputedStyle(document.body).getPropertyValue('--accent2').trim()||'#ff3c6e';
+  cx.fillStyle=a2;cx.beginPath();cx.arc(neko.tx,neko.ty,4,0,Math.PI*2);cx.fill();
+}
+const nekoM={feed:['Nyam nyam! 🐟','おいしい！','More please!'],pet:['Purrrr... 😻','nyaaaa~','*kneads*'],play:['ZOOM! 💨','Pouncing!','yaaaaay!'],sleep:['zzZZzz... 💤','*snores cutely*','shhh...']};
+function nekoAct(a){
+  const m=document.getElementById('neko-msg');if(m)m.textContent=nekoM[a][Math.floor(Math.random()*3)];
+  if(a==='feed'){neko.hunger=Math.min(100,neko.hunger+25);neko.happy=Math.min(100,neko.happy+10);}
+  if(a==='pet')neko.happy=Math.min(100,neko.happy+20);
+  if(a==='play'){neko.happy=Math.min(100,neko.happy+30);neko.energy=Math.max(0,neko.energy-20);}
+  if(a==='sleep')neko.energy=Math.min(100,neko.energy+40);
+  updateNekoStats();
+}
+function updateNekoStats(){
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=v+'%';};
+  s('nk-hunger',neko.hunger);s('nk-happy',neko.happy);s('nk-energy',neko.energy);s('nk-clean',neko.clean);
+}
+
+// ─── TERMINAL ────────────────────────────────────────────────────────────────
+function terminalContent(){
+  return `<div id="terminal-output"><div class="t-line acc">Digital Monk OS v3.0 — Terminal</div><div class="t-line acc">Type 'help' for commands.</div><div class="t-line"></div></div>
+    <div id="terminal-input-line"><span id="terminal-prompt">monk@void:~$&nbsp;</span><input id="terminal-input" type="text" autocomplete="off" spellcheck="false" /></div>`;
+}
+function initTerminal(){
+  setTimeout(()=>{
+    const inp=document.getElementById('terminal-input');if(!inp)return;
+    inp.focus();
+    inp.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const cmd=inp.value.trim();inp.value='';termExec(cmd);});
+  },100);
+}
+const tCmds={
+  help:()=>['help — this menu','blog — open blog','tetris — play tetris','music — mixtapes','neko — open neko','about — about','theme [name] — set theme','clear — clear','date — current date','posts — list posts'],
+  blog:()=>{openWindow('blog');return['Opening Blog...'];},
+  tetris:()=>{openWindow('tetris');return['Loading Tetris...'];},
+  music:()=>{openWindow('music');return['Opening Mixtapes...'];},
+  neko:()=>{openWindow('neko');return['Spawning Neko...'];},
+  about:()=>{openWindow('about');return['Opening About...'];},
+  date:()=>[new Date().toString()],
+  posts:()=>POSTS.length?POSTS.map((p,i)=>`[${i}] ${formatDate(p.date)} — ${p.title}`):['No posts loaded.'],
+  clear:()=>null,
+};
+function termExec(cmd){
+  const out=document.getElementById('terminal-output');if(!cmd)return;
+  const line=document.createElement('div');line.className='t-line';line.textContent='$ '+cmd;out.appendChild(line);
+  const[base,...args]=cmd.toLowerCase().split(' ');
+  if(base==='clear'){out.innerHTML='';return;}
+  if(base==='theme'){setTheme(args[0]||'');addTL(out,`Theme: ${args[0]||'default'}`,'acc');return;}
+  if(base==='echo'){addTL(out,args.join(' '));return;}
+  if(tCmds[base]){const r=tCmds[base]();if(r)r.forEach(x=>addTL(out,x,x.includes('—')?'acc':''));}
+  else addTL(out,`command not found: ${base}`,'err');
+  out.scrollTop=out.scrollHeight;
+}
+function addTL(out,text,cls=''){const d=document.createElement('div');d.className='t-line '+cls;d.textContent=text;out.appendChild(d);}
+</script>
+</body>
+</html>

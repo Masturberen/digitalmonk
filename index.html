@@ -1,24 +1,12 @@
-backend:
-  name: git-gateway
-  auth_type: implicit
-  branch: main
-
-media_folder: "static/images"
-public_folder: "/static/images"
-
-collections:
-  - name: "posts"
-    label: "Blog Posts"
-    folder: "posts"
-    create: true
-    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
-    fields:
-      - { label: "Titel", name: "title", widget: "string" }
-      - { label: "Datum", name: "date", widget: "datetime" }
-      - label: "Tags"
-        name: "tags"
-        widget: "list"
-        default: ["thoughts"]
-      - { label: "Samenvatting", name: "excerpt", widget: "text" }
-      - { label: "Inhoud", name: "body", widget: "markdown" }
-      - { label: "Gepubliceerd", name: "published", widget: "boolean", default: true }
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Monk — CMS</title>
+</head>
+<body>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+</body>
+</html>
